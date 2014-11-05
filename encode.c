@@ -3,25 +3,24 @@
 #include <math.h>
 #include <assert.h>
 #include <string.h>
-#include "make_wav.h"
 
 /* sample data in a .wav file is little endian.
    refer to https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
    for information on the endianness of different parts of the
    .wav file header */
 void write_little_endian(unsigned int word, int num_bytes, FILE *wav_file) {
-	unsigned buf;
-	while (num_bytes > 0) {
-		buf = word & 0xff;
-		fwrite(&buf, 1, 1, wav_file);
-		num_bytes--;
-	}
-	word >>= 8;
+    unsigned buf;
+    while(num_bytes>0)
+    {   buf = word & 0xff;
+        fwrite(&buf, 1,1, wav_file);
+        num_bytes--;
+    word >>= 8;
+    }
 }
 
 /* data is the sample data. All the other arguments specify the header information 
    for audioComm, the default sample rate should be 44100 for compatability */
-void write_wav(char * filename, unsigned long num_samples, short int * data, int s_rate) {
+void write_wav(char * filename, unsigned long num_samples, short int * data, unsigned int s_rate) {
     FILE* wav_file;
     unsigned int sample_rate;
     unsigned int num_channels;
@@ -31,18 +30,12 @@ void write_wav(char * filename, unsigned long num_samples, short int * data, int
  
     num_channels = 1;   /* default to mono */
     bytes_per_sample = 2;   /* bit depth of 16 */
- 
-    if (s_rate<=0) sample_rate = 44100;
-    else sample_rate = (unsigned int) s_rate;
- 
+    sample_rate = s_rate;
+    printf("sample_rate %i\n", sample_rate);
     byte_rate = sample_rate*num_channels*bytes_per_sample;
  
     wav_file = fopen(filename, "w");
  
-    /* more info on the data chunks of a .wav file:
-	https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
-	*/
-
     /* write RIFF header */
     fwrite("RIFF", 1, 4, wav_file);
     write_little_endian(36 + bytes_per_sample* num_samples*num_channels, 4, wav_file);
@@ -60,9 +53,11 @@ void write_wav(char * filename, unsigned long num_samples, short int * data, int
  
     /* write data subchunk */
     fwrite("data", 1, 4, wav_file);
-    write_little_endian(bytes_per_sample* num_samples*num_channels, 4, wav_file);
+    write_little_endian(bytes_per_sample* num_samples * num_channels, 4, wav_file);
+    printf("bytes in wav file: %i\n", bytes_per_sample* num_samples * num_channels);
 
     /* write the sample values */
+    printf("num_samples called in write_wav: %lu\n", num_samples);
     for (i=0; i< num_samples; i++) {
 		write_little_endian((unsigned int)(data[i]),bytes_per_sample, wav_file);
     }
@@ -87,16 +82,25 @@ unsigned int is_txt_file(const char *fspec) {
 }
 
 /* takes the ascii value of a given printable character, and maps to a frequency between
-	300 Hz and 10 KHz. can take ASCII values from 32 to 127 */
+	300 Hz and 10 KHz. can take ASCII values from 32 to 127 along with 
+	control ascii vals 9(tab), 10(line feed), 11(vertical tab) */
 float ascii_to_freq(char c) {
 	float ascii = (float) c;
 	printf("ascii is: %f\n", ascii);
 	float num_steps;
 	float freq_step_size;
 	float freq;
-	freq_step_size = (float)9700 / (float)95; // divide the frequency space by the number of ascii vals
-	num_steps = ascii - (float)32;
+	freq_step_size = (float)9700 / (float)98; // divide the frequency space by the number of ascii vals
+	if (ascii < (float)32) {
+		if (ascii == (float)9 ) { num_steps = (float)0; }
+		if (ascii == (float)10) { num_steps = (float)1; }
+		if (ascii == (float)11) { num_steps = (float)2; }
+	}
+	else {
+		num_steps = ascii - (float)32 + 3;
+	}
 	freq = (float)300 + (freq_step_size * num_steps);
+	printf("freq is: %f\n", freq);
 	return freq;
 }
 
@@ -122,6 +126,7 @@ char * txt_to_string(FILE *file) {
    sine wav generated / heard corresponds to the first ASCII character in the text
    file. The second sine wav generated / heard corresponds to the second ASCII character
    and so on. */
+
 int main(int argc, char *argv[]) {
 
 	/* first argument is the text file. second arg is the wavfile name */
@@ -144,12 +149,12 @@ int main(int argc, char *argv[]) {
 
 	char * wav_name;
 	unsigned long num_samples;
-	short int * samples;
 	unsigned int sample_rate = 44100;
 	float * freq_array;
 	unsigned long samps_per_freq;
 	unsigned int txt_len;
 	char * txt_array;
+	float freq_radians_per_sample;
 
 	/* 
 	samps_per_freq is number of samples to be recorded for a 
@@ -159,17 +164,58 @@ int main(int argc, char *argv[]) {
 	More info: http://support.ircam.fr/docs/AudioSculpt/3.0/co/Window%20Size.html 
 	*/
 
-	samps_per_freq = (unsigned long) 11025; // quarter of a second per frequency
+	samps_per_freq = (unsigned long)11025; // quarter of a second per frequency
 	txt_array = txt_to_string(txt);
 	txt_len = strlen(txt_array);
 	freq_array = calloc(txt_len, sizeof(float));
+	num_samples = samps_per_freq * (unsigned long)txt_len;
+	int *buffer;
+	buffer = calloc(num_samples, sizeof(int)); 
+	printf("\n");
 
+	/* build the array of frequencies corresponding to the ascii vals in txt file */
 	for (unsigned int i = 0; i < txt_len; i++) {
 		printf("i is: %i\n", i);
 		freq_array[i] = ascii_to_freq(txt_array[i]);
-		printf("freq_array[i] is: %f\n", freq_array[i]);
+		//printf("freq_array[i] is: %f\n", freq_array[i]);
 	}
 
+	for (unsigned int i = 0; i < txt_len; i++) {
+	}
+
+	printf("\n");
+
+	/* write the buffer, k corresponds to index in freq_array and i to samples
+	   of specified ascii character*/
+	unsigned int buffer_index;
+	float phase;
+	float amplitude;
+	unsigned int k;
+	unsigned int i;
+	printf("samps_per_freq is: %lu\n", samps_per_freq);
+	for (k = 0; k < txt_len; k++) {
+		buffer_index = k * samps_per_freq;
+		freq_radians_per_sample = freq_array[k] * 2 * M_PI/sample_rate;
+		phase  = 0;
+		amplitude = 32000;
+		printf("k is now %i\n", k);
+		for (i = 0; i < samps_per_freq; i++) {
+			phase += freq_radians_per_sample;
+			buffer[buffer_index + i] = (int)(amplitude * sin(phase));
+			if (i == (samps_per_freq - 1)) {
+				printf("i is about to change from %i to 0\n", i);
+				printf("k is changing from %i\n", k);
+			}
+		} 
+	}
+
+	write_wav(argv[2], num_samples, buffer, sample_rate);
+	printf("wrote wav file\n");
+	printf("buffer_index + samps_per_freq is: %i\n", buffer_index + samps_per_freq);
+	printf("num_samples is: %lu\n", num_samples);
+	printf("num_samples / sample_rate is: %lu\n", num_samples  / sample_rate);
+
+	return 0;
 }
 
 
