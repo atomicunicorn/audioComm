@@ -54,7 +54,7 @@ void write_wav(char * filename, unsigned long num_samples, short int * data, uns
     /* write data subchunk */
     fwrite("data", 1, 4, wav_file);
     write_little_endian(bytes_per_sample* num_samples * num_channels, 4, wav_file);
-    printf("bytes in wav file: %i\n", bytes_per_sample* num_samples * num_channels);
+    printf("bytes in wav file: %lu\n", bytes_per_sample* num_samples * num_channels);
 
     /* write the sample values */
     printf("num_samples called in write_wav: %lu\n", num_samples);
@@ -65,12 +65,30 @@ void write_wav(char * filename, unsigned long num_samples, short int * data, uns
     fclose(wav_file);
 }
 
-/* returns 1 if file extension is .txt, 0 otherwise*/
+/* returns 1 if file extension is .txt, 0 otherwise */
 unsigned int is_txt_file(const char *fspec) {
     char *e = strrchr (fspec, '.');
-    if (e == NULL)
+    if (e == NULL) {
         return 0;
+    }
     if ( (e[0] == '.') && (e[1] == 't') && (e[2] == 'x') && (e[3] == 't') ) {
+    	if ( e[4] == '\0' ) {
+    		return 1;
+    	}
+    	return 0;
+    }
+    else {
+    	return 0;
+    }
+}
+
+/* returns 1 if file extension is .wav, 0 otherwise */
+unsigned int is_wav_file(const char *fspec) {
+	char *e = strrchr (fspec, '.');
+	if (e == NULL) {
+		return 0;
+	}
+	if ( (e[0] == '.') && (e[1] == 'w') && (e[2] == 'a') && (e[3] == 'v') ) {
     	if ( e[4] == '\0' ) {
     		return 1;
     	}
@@ -146,11 +164,17 @@ int main(int argc, char *argv[]) {
 		printf("File to be encoded must be a .txt file.\n");
 		return 0;
 	}
+	if (is_wav_file(argv[2]) == 0) {
+		printf("File audio is written to must be a .wav file.\n");
+		return 0;
+	}
+
 
 	char * wav_name;
 	unsigned long num_samples;
 	unsigned int sample_rate = 44100;
 	float * freq_array;
+	float * full_freq_array;
 	unsigned long samps_per_freq;
 	unsigned int txt_len;
 	char * txt_array;
@@ -165,57 +189,46 @@ int main(int argc, char *argv[]) {
 	*/
 
 	samps_per_freq = (unsigned long)11025; // quarter of a second per frequency
+	samps_per_freq = samps_per_freq / (unsigned long) 2; // required since there is some strangeness going on in write_wav
 	txt_array = txt_to_string(txt);
 	txt_len = strlen(txt_array);
 	freq_array = calloc(txt_len, sizeof(float));
 	num_samples = samps_per_freq * (unsigned long)txt_len;
 	int *buffer;
-	buffer = calloc(num_samples, sizeof(int)); 
+	buffer = calloc(num_samples, sizeof(int));
+	full_freq_array = calloc(num_samples, sizeof(float));
+
 	printf("\n");
 
-	/* build the array of frequencies corresponding to the ascii vals in txt file */
+	/* build freq_array of frequencies corresponding to the ascii vals in txt file */
 	for (unsigned int i = 0; i < txt_len; i++) {
-		printf("i is: %i\n", i);
 		freq_array[i] = ascii_to_freq(txt_array[i]);
-		//printf("freq_array[i] is: %f\n", freq_array[i]);
 	}
-
-	for (unsigned int i = 0; i < txt_len; i++) {
-	}
-
-	printf("\n");
 
 	/* write the buffer, k corresponds to index in freq_array and i to samples
 	   of specified ascii character*/
-	unsigned int buffer_index;
+	unsigned int buffer_index = 0;
 	float phase;
 	float amplitude;
-	unsigned int k;
-	unsigned int i;
-	printf("samps_per_freq is: %lu\n", samps_per_freq);
+	unsigned int k = 0;
+	unsigned int i = 0;
 	for (k = 0; k < txt_len; k++) {
-		buffer_index = k * samps_per_freq;
 		freq_radians_per_sample = freq_array[k] * 2 * M_PI/sample_rate;
 		phase  = 0;
 		amplitude = 32000;
-		printf("k is now %i\n", k);
 		for (i = 0; i < samps_per_freq; i++) {
 			phase += freq_radians_per_sample;
-			buffer[buffer_index + i] = (int)(amplitude * sin(phase));
-			if (i == (samps_per_freq - 1)) {
-				printf("i is about to change from %i to 0\n", i);
-				printf("k is changing from %i\n", k);
-			}
+			buffer[buffer_index] = (int)(amplitude * sin(phase));
+			buffer_index += 1;
 		} 
 	}
 
-	write_wav(argv[2], num_samples, buffer, sample_rate);
+	write_wav(argv[2], 2 * num_samples, buffer, sample_rate);
 	printf("wrote wav file\n");
-	printf("buffer_index + samps_per_freq is: %i\n", buffer_index + samps_per_freq);
-	printf("num_samples is: %lu\n", num_samples);
-	printf("num_samples / sample_rate is: %lu\n", num_samples  / sample_rate);
+	printf("length in samples: %lu\n", num_samples);
+	printf("length in seconds: %lu\n", num_samples  / sample_rate);
 
-	return 0;
+	return 1;
 }
 
 
