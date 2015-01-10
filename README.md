@@ -3,9 +3,14 @@ Currently in development, audioComm is a tool which can send and receive audio i
 WARNING: audioComm is not intended for encryption! What audioComm can do is send already encrypted data in disguise as a non-suspicious piece of data (i.e. share a PGP encrypted message with someone as a .wav file). Use audioComm on unencrypted data at your own risk!
 
 To use:
+
 1) download all files into a working directory, make
+
 2) $ ./encode [txt file] [wav filename]
+
 Now the text file should be encoded as a wav file in your working directory.
+
 To decode the .wav file run:
+
 $ python decode.py [wavfile] 2048
 
