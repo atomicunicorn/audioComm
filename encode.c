@@ -31,7 +31,7 @@ void write_wav(char * filename, unsigned long num_samples, short int * data, uns
     num_channels = 1;   /* default to mono */
     bytes_per_sample = 2;   /* bit depth of 16 */
     sample_rate = s_rate;
-    printf("sample_rate %i\n", sample_rate);
+    //printf("sample_rate %i\n", sample_rate);
     byte_rate = sample_rate*num_channels*bytes_per_sample;
  
     wav_file = fopen(filename, "w");
@@ -54,10 +54,10 @@ void write_wav(char * filename, unsigned long num_samples, short int * data, uns
     /* write data subchunk */
     fwrite("data", 1, 4, wav_file);
     write_little_endian(bytes_per_sample* num_samples * num_channels, 4, wav_file);
-    printf("bytes in wav file: %lu\n", bytes_per_sample* num_samples * num_channels);
+    //printf("bytes in wav file: %lu\n", bytes_per_sample* num_samples * num_channels);
 
     /* write the sample values */
-    printf("num_samples called in write_wav: %lu\n", num_samples);
+    //printf("num_samples called in write_wav: %lu\n", num_samples);
     for (i=0; i< num_samples; i++) {
 		write_little_endian((unsigned int)(data[i]),bytes_per_sample, wav_file);
     }
@@ -104,7 +104,7 @@ unsigned int is_wav_file(const char *fspec) {
 	control ascii vals 9(tab), 10(line feed), 11(vertical tab) */
 float ascii_to_freq(char c) {
 	float ascii = (float) c;
-	printf("ascii is: %f\n", ascii);
+	//printf("ascii is: %f\n", ascii);
 	float num_steps;
 	float freq_step_size;
 	float freq;
@@ -118,7 +118,7 @@ float ascii_to_freq(char c) {
 		num_steps = ascii - (float)32 + 3;
 	}
 	freq = (float)300 + (freq_step_size * num_steps);
-	printf("freq is: %f\n", freq);
+	//printf("freq is: %f\n", freq);
 	return freq;
 }
 
@@ -153,8 +153,8 @@ int main(int argc, char *argv[]) {
 		printf("encode.c requires a .txt file and a .wav argument to write to.\n");
 		return 0;
 	}
-	printf("argv[1] is: %s\n", argv[1]);
-	printf("argv[2] is: %s\n", argv[2]);
+	//printf("argv[1] is: %s\n", argv[1]);
+	//printf("argv[2] is: %s\n", argv[2]);
 
 	FILE * txt;
 	char * txt_string;
@@ -188,7 +188,7 @@ int main(int argc, char *argv[]) {
 	More info: http://support.ircam.fr/docs/AudioSculpt/3.0/co/Window%20Size.html 
 	*/
 
-	samps_per_freq = (unsigned long)11025; // quarter of a second per frequency
+	samps_per_freq = (unsigned long)2048; 
 	samps_per_freq = samps_per_freq / (unsigned long) 2; // required since there is some strangeness going on in write_wav
 	txt_array = txt_to_string(txt);
 	txt_len = strlen(txt_array);
@@ -224,9 +224,9 @@ int main(int argc, char *argv[]) {
 	}
 
 	write_wav(argv[2], 2 * num_samples, buffer, sample_rate);
-	printf("wrote wav file\n");
-	printf("length in samples: %lu\n", num_samples);
-	printf("length in seconds: %lu\n", num_samples  / sample_rate);
+	//printf("wrote wav file\n");
+	//printf("length in samples: %lu\n", num_samples * 2);
+	//printf("length in seconds: %lu\n", num_samples * 2 / sample_rate);
 
 	return 1;
 }
