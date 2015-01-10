@@ -26,6 +26,7 @@ print " "
 def get_freq(clip):
 	if len(clip) != samps_per_freq:
 		print "clip size not correct for get_freq() function!"
+		print "clip size is: ", len(clip)
 		return None
 	fft_window = np.fft.rfft(clip)
 	fft_window = np.absolute(fft_window)
@@ -39,7 +40,7 @@ def get_freq(clip):
 			max_amp = fft_window[i]
 		i += 1
 	max_freq = (float(max_freq_ind) / float(np.size(freq_bins))) * float(rate)
-	#print "Maximum frequency is: ", max_freq
+	# print "Maximum frequency is: ", max_freq
 	return max_freq
 
 # 0th element holds the freq corresponding to the 0th ascii character
@@ -82,7 +83,8 @@ def freq_to_ascii(freq):
 def freq_array_to_ascii_array(freq_array):
 	ascii = []
 	for elem in freq_array:
-		ascii.append(freq_to_ascii(elem))
+		if elem != None:
+			ascii.append(freq_to_ascii(elem))
 	return ascii
 
 def write_message(ascii_array):
@@ -96,7 +98,11 @@ test_array = build_freq_array()
 i = 0
 final_freq_array = []
 while i < len(test_array):
-	final_freq_array.append(nearest_freq(test_array[i]))
+	if test_array[i] != None:
+		final_freq_array.append(nearest_freq(test_array[i]))
 	i += 1
 ascii_array = freq_array_to_ascii_array(final_freq_array)
+print "len(ascii_array): ", len(ascii_array)
+for elem in ascii_array:
+	print elem
 write_message(ascii_array)
