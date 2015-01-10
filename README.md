@@ -8,7 +8,7 @@ To use:
 
 2) $ ./encode [txt file] [wav filename]
 
-Now the text file should be encoded as a wav file in your working directory.
+Now the text file should be encoded as a wav file in your working directory. At this point, you can send the .wav file to anyone. Some testing/tweaking still needs to be done on the playback of the .wav file through skype, but anyone with the original .wav file and the decode.py file should be able to decode the .wav file back into its original text file.
 
 To decode the .wav file run:
 
