@@ -39,6 +39,7 @@ def create_and_test(string, textfile):
 def main():
 	create_and_test("I shat myself", "shit.txt")
 	create_and_test("", "empty.txt")
+	create_and_test("hello world!", "hello.txt")
 	create_and_test("""
 
 
