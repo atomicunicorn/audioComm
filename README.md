@@ -7,5 +7,5 @@ To use:
 2) $ ./encode [txt file] [wav filename]
 Now the text file should be encoded as a wav file in your working directory.
 To decode the .wav file run:
-$ python decode.py [wavfile] 2048
+$ python decode.py [wav filename] 2048
 
